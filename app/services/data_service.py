@@ -1,21 +1,50 @@
 """Service pour la gestion des données."""
 import pandas as pd
 import numpy as np
-from supabase import create_client, Client
+import httpx
 from app.config import settings
 
 class DataService:
     """Service pour récupérer et nettoyer les données."""
     
     def __init__(self):
-        """Initialise la connexion Supabase."""
-        self.supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+        """Initialise le service."""
+        self._supabase_url = settings.SUPABASE_URL.rstrip('/')
+        self._supabase_key = settings.SUPABASE_KEY
+        self._client = None
+    
+    @property
+    def client(self) -> httpx.Client:
+        """Récupère ou crée le client HTTP."""
+        if self._client is None:
+            self._client = httpx.Client(
+                base_url=f"{self._supabase_url}/rest/v1",
+                headers={
+                    "apikey": self._supabase_key,
+                    "Authorization": f"Bearer {self._supabase_key}",
+                    "Content-Type": "application/json",
+                    "Prefer": "return=representation"
+                },
+                timeout=30.0
+            )
+        return self._client
     
     def get_data(self) -> pd.DataFrame:
         """Récupère les données de Supabase."""
-        response = self.supabase.table("ai_training_data").select("*").execute()
-        df = pd.DataFrame(response.data)
-        return df
+        try:
+            response = self.client.get("/ai_training_data", params={"select": "*"})
+            response.raise_for_status()
+            df = pd.DataFrame(response.json())
+            return df
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                raise ValueError(
+                    f"Table 'ai_training_data' non trouvée. "
+                    f"Vérifiez que la table existe dans votre projet Supabase."
+                )
+            raise ValueError(f"Erreur HTTP {e.response.status_code}: {e.response.text}")
+        except Exception as e:
+            raise ValueError(f"Erreur lors de la récupération des données: {str(e)}")
     
     def clean_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """Nettoie les données (erreurs de types, dates dans colonnes numériques)."""

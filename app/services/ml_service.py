@@ -13,14 +13,19 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, accuracy_score, precision_score, recall_score, f1_score
 from typing import Tuple, Dict, Any, Optional
 import os
+import pickle
+from pathlib import Path
 
 from app.config import settings
 
 class MLService:
     """Service pour l'entraînement et l'utilisation des modèles ML."""
     
+    # Dossier pour sauvegarder les modèles
+    MODELS_DIR = Path("models")
+    
     def __init__(self):
-        """Initialise le service ML."""
+        """Initialise le service ML et charge les modèles s'ils existent."""
         self.rf_model: Optional[RandomForestClassifier] = None
         self.svm_model: Optional[SVC] = None
         self.scaler: Optional[StandardScaler] = None
@@ -30,6 +35,69 @@ class MLService:
             'home_forme_pts_last5', 'away_forme_pts_last5',
             'home_moy_buts_marques_last5', 'away_moy_buts_encaisse_last5'
         ]
+        
+        # Créer le dossier models s'il n'existe pas
+        self.MODELS_DIR.mkdir(exist_ok=True)
+        
+        # Charger automatiquement les modèles s'ils existent
+        self.load_models()
+    
+    def is_trained(self) -> bool:
+        """Vérifie si les modèles sont entraînés."""
+        return (
+            self.rf_model is not None and 
+            self.svm_model is not None and 
+            self.scaler is not None and 
+            self.label_encoder is not None
+        )
+    
+    def save_models(self) -> bool:
+        """Sauvegarde les modèles entraînés."""
+        if not self.is_trained():
+            return False
+        
+        try:
+            # Sauvegarder chaque composant
+            with open(self.MODELS_DIR / "rf_model.pkl", "wb") as f:
+                pickle.dump(self.rf_model, f)
+            with open(self.MODELS_DIR / "svm_model.pkl", "wb") as f:
+                pickle.dump(self.svm_model, f)
+            with open(self.MODELS_DIR / "scaler.pkl", "wb") as f:
+                pickle.dump(self.scaler, f)
+            with open(self.MODELS_DIR / "label_encoder.pkl", "wb") as f:
+                pickle.dump(self.label_encoder, f)
+            
+            return True
+        except Exception as e:
+            print(f"Erreur lors de la sauvegarde des modèles : {e}")
+            return False
+    
+    def load_models(self) -> bool:
+        """Charge les modèles sauvegardés."""
+        try:
+            rf_path = self.MODELS_DIR / "rf_model.pkl"
+            svm_path = self.MODELS_DIR / "svm_model.pkl"
+            scaler_path = self.MODELS_DIR / "scaler.pkl"
+            encoder_path = self.MODELS_DIR / "label_encoder.pkl"
+            
+            # Vérifier que tous les fichiers existent
+            if not all([rf_path.exists(), svm_path.exists(), scaler_path.exists(), encoder_path.exists()]):
+                return False
+            
+            # Charger chaque composant
+            with open(rf_path, "rb") as f:
+                self.rf_model = pickle.load(f)
+            with open(svm_path, "rb") as f:
+                self.svm_model = pickle.load(f)
+            with open(scaler_path, "rb") as f:
+                self.scaler = pickle.load(f)
+            with open(encoder_path, "rb") as f:
+                self.label_encoder = pickle.load(f)
+            
+            return True
+        except Exception as e:
+            print(f"Erreur lors du chargement des modèles : {e}")
+            return False
     
     def train_classification_models(self, df: pd.DataFrame) -> Dict[str, Any]:
         """Entraîne les modèles de classification."""
@@ -108,6 +176,9 @@ class MLService:
         self._plot_confusion_matrix(y_test, y_pred_rf, labels, "Matrice RF Optimisée", "confusion_matrix_rf.png")
         self._plot_confusion_matrix(y_test, y_pred_svm, labels, "Matrice SVM Optimisée", "confusion_matrix_svm.png")
         
+        # Sauvegarder automatiquement les modèles après l'entraînement
+        self.save_models()
+        
         return {
             'random_forest': rf_metrics,
             'svm': svm_metrics,
@@ -145,8 +216,11 @@ class MLService:
     
     def predict_match(self, match_data: Dict[str, Any]) -> Dict[str, Any]:
         """Prédit le résultat d'un match."""
-        if self.rf_model is None or self.svm_model is None:
-            raise ValueError("Les modèles doivent être entraînés avant de faire des prédictions.")
+        if not self.is_trained():
+            raise ValueError(
+                "Les modèles doivent être entraînés avant de faire des prédictions. "
+                "Utilisez l'endpoint POST /train pour entraîner les modèles."
+            )
         
         # Création DataFrame
         input_data = pd.DataFrame([match_data], columns=['hometeam', 'awayteam'] + self.features)

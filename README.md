@@ -8,6 +8,7 @@ API REST construite avec FastAPI pour prédire les résultats de matchs de footb
 - **Prédiction de matchs** : Prédiction du résultat d'un match (Victoire Domicile, Match Nul, Victoire Extérieur)
 - **Analyse de régression** : Analyse de l'évolution des cotes d'une équipe dans le temps
 - **Analyse d'importance** : Analyse de l'importance des différentes features dans la prédiction
+- **Affichage des métriques** : Script indépendant pour afficher les métriques détaillées des modèles
 - **Documentation interactive** : Documentation automatique avec Swagger UI et ReDoc
 
 ## 📋 Prérequis
@@ -43,10 +44,44 @@ Sinon, les valeurs par défaut dans `app/config.py` seront utilisées.
 
 ## 🚀 Utilisation
 
+### Script d'affichage des métriques (Indépendant)
+
+Pour afficher les métriques détaillées des modèles SVM et Random Forest sans utiliser l'API :
+
+```bash
+# Activer l'environnement virtuel
+source venv/bin/activate  # Sur Linux/Mac
+# ou
+venv\Scripts\activate  # Sur Windows
+
+# Exécuter le script
+python display_metrics.py
+```
+
+Ce script va :
+- Récupérer les données depuis Supabase
+- Entraîner les modèles Random Forest et SVM
+- Afficher les métriques détaillées (Accuracy, Precision, Recall, F1-Score, AUC-ROC)
+- Générer les matrices de confusion (`confusion_matrix_rf.png` et `confusion_matrix_svm.png`)
+- Comparer les performances des deux modèles
+
+**Métriques affichées** :
+- Accuracy (précision globale)
+- Precision, Recall, F1-Score par classe (Domicile, Nul, Extérieur)
+- Métriques moyennes (macro)
+- AUC-ROC (Area Under the Curve)
+- Matrices de confusion
+- Rapport de classification détaillé
+
 ### Démarrer l'API
 
 ```bash
 uvicorn app.main:app --reload
+```
+
+Ou utiliser le script de démarrage :
+```bash
+python run_api.py
 ```
 
 L'API sera accessible à l'adresse : `http://localhost:8000`
@@ -76,6 +111,29 @@ Vérifie que l'API fonctionne.
 #### `GET /health`
 Vérifie l'état de santé de l'API.
 
+#### `GET /health/supabase`
+Vérifie la connexion à Supabase et teste si les clés sont valides.
+
+**Réponse** :
+```json
+{
+  "status": "OK",
+  "message": "Connexion Supabase réussie",
+  "data_count": 5321
+}
+```
+
+#### `GET /models/status`
+Vérifie si les modèles sont entraînés et disponibles.
+
+**Réponse** :
+```json
+{
+  "trained": true,
+  "message": "Les modèles sont entraînés et prêts à être utilisés."
+}
+```
+
 ### 2. Entraînement
 
 #### `POST /train`
@@ -99,7 +157,10 @@ Entraîne les modèles de classification (Random Forest et SVM).
 }
 ```
 
-**Note** : Cette opération peut prendre plusieurs minutes.
+**Note** : 
+- Cette opération peut prendre plusieurs minutes
+- Les modèles sont automatiquement sauvegardés dans le dossier `models/` après l'entraînement
+- Les modèles sauvegardés sont automatiquement rechargés au redémarrage de l'API
 
 ### 3. Prédiction
 
@@ -213,8 +274,37 @@ Récupère un graphique généré par l'API.
 │       ├── __init__.py
 │       ├── data_service.py  # Service de gestion des données
 │       └── ml_service.py    # Service de machine learning
-├── requirements.txt         # Dépendances Python
-└── README.md               # Ce fichier
+├── display_metrics.py       # Script indépendant pour afficher les métriques
+├── run_api.py              # Script de démarrage de l'API
+├── main.py                 # Script original (ancien code)
+├── t.py                    # Script d'analyse d'importance
+├── requirements.txt        # Dépendances Python
+├── .env                    # Variables d'environnement (non versionné)
+├── .env.example            # Exemple de fichier .env
+└── README.md              # Ce fichier
+```
+
+## 📊 Scripts disponibles
+
+### `display_metrics.py`
+Script Python indépendant qui :
+- Récupère les données depuis Supabase
+- Entraîne les modèles Random Forest et SVM
+- Affiche toutes les métriques détaillées
+- Génère des graphiques de matrices de confusion
+- Compare les performances des modèles
+
+**Utilisation** :
+```bash
+python display_metrics.py
+```
+
+### `run_api.py`
+Script de démarrage simplifié pour l'API FastAPI.
+
+**Utilisation** :
+```bash
+python run_api.py
 ```
 
 ## 🔒 Sécurité
@@ -281,6 +371,8 @@ print(response.json())
 - Les modèles doivent être entraînés avant de faire des prédictions
 - Les graphiques sont sauvegardés dans le répertoire courant
 - L'API utilise des modèles de machine learning qui nécessitent des données propres et complètes
+- Le script `display_metrics.py` est indépendant de l'API et peut être utilisé pour analyser les modèles sans démarrer le serveur
+- Les modèles entraînés via l'API sont sauvegardés dans le dossier `models/` pour être réutilisés au redémarrage
 
 ## 🤝 Contribution
 

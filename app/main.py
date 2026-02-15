@@ -36,6 +36,8 @@ app.add_middleware(
 )
 
 # Instances des services (singletons)
+# Note: DataService initialise la connexion Supabase de manière paresseuse
+# pour permettre à l'API de démarrer même si la connexion échoue
 data_service = DataService()
 ml_service = MLService()
 
@@ -62,16 +64,71 @@ async def health_check():
     }
 
 
+@app.get("/health/supabase", tags=["Santé"])
+async def health_check_supabase():
+    """
+    Vérifie la connexion à Supabase.
+    
+    Teste si les clés Supabase sont valides et si la connexion fonctionne.
+    """
+    try:
+        df = data_service.get_data()
+        return {
+            "status": "OK",
+            "message": "Connexion Supabase réussie",
+            "data_count": len(df)
+        }
+    except ValueError as e:
+        error_msg = str(e)
+        if "Supabase" in error_msg or "API key" in error_msg:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Erreur de connexion à Supabase. "
+                    "Vérifiez que vos clés SUPABASE_URL et SUPABASE_KEY sont correctes dans le fichier .env. "
+                    "Assurez-vous d'utiliser la clé 'anon public' depuis votre tableau de bord Supabase."
+                )
+            )
+        raise HTTPException(status_code=400, detail=error_msg)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur lors de la vérification Supabase : {str(e)}"
+        )
+
+
+@app.get("/models/status", tags=["Entraînement"])
+async def get_models_status():
+    """
+    Vérifie si les modèles sont entraînés et disponibles.
+    
+    Retourne le statut des modèles (entraînés ou non).
+    """
+    is_trained = ml_service.is_trained()
+    return {
+        "trained": is_trained,
+        "message": "Les modèles sont entraînés et prêts à être utilisés." if is_trained 
+                  else "Les modèles ne sont pas encore entraînés. Utilisez POST /train pour les entraîner."
+    }
+
+
 @app.post("/train", response_model=ModelTrainingResponse, tags=["Entraînement"])
 async def train_models():
     """
     Entraîne les modèles de classification (Random Forest et SVM).
     
     Cette opération peut prendre plusieurs minutes selon la taille des données.
+    Les modèles sont automatiquement sauvegardés après l'entraînement.
     """
     try:
         # Récupération et nettoyage des données
         df = data_service.get_and_clean_data()
+        
+        if df.empty:
+            raise HTTPException(
+                status_code=400, 
+                detail="Aucune donnée disponible pour l'entraînement. Vérifiez votre connexion Supabase."
+            )
         
         # Entraînement des modèles
         results = ml_service.train_classification_models(df)
@@ -81,10 +138,19 @@ async def train_models():
             "random_forest": results['random_forest'],
             "svm": results['svm'],
             "best_params": results.get('best_params'),
-            "auc_score": results.get('auc_score')
+            "auc_score": results.get('auc_score'),
+            "message": "Modèles entraînés et sauvegardés avec succès."
         }
+    except ValueError as e:
+        # Erreur de connexion Supabase ou autres erreurs de validation
+        error_msg = str(e)
+        # Les messages d'erreur détaillés sont déjà dans ValueError
+        raise HTTPException(status_code=400, detail=error_msg)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de l'entraînement : {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Erreur lors de l'entraînement : {str(e)}"
+        )
 
 
 @app.post("/predict", response_model=PredictionResponse, tags=["Prédiction"])

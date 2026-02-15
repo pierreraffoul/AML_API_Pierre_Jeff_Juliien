@@ -37,6 +37,13 @@ MANIFEST
 *.pdf
 !README.md
 
+# Modèles ML sauvegardés
+models/
+*.pkl
+*.joblib
+*.h5
+*.model
+
 # Variables d'environnement
 .env
 .env.local
