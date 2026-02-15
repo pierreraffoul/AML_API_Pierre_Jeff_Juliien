@@ -1,0 +1,104 @@
+# Environnement virtuel
+venv/
+env/
+ENV/
+.venv
+venv.bak/
+
+# Fichiers Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Fichiers générés par l'API
+*.png
+*.jpg
+*.jpeg
+*.pdf
+!README.md
+
+# Variables d'environnement
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Fichiers de sauvegarde
+*.bak
+*.tmp
+*.temp
+*~
+
+# Tests et couverture
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Modèles ML sauvegardés (optionnel - décommentez si vous ne voulez pas versionner les modèles)
+# *.pkl
+# *.joblib
+# *.h5
+# *.model
+
+# Fichiers temporaires FastAPI
+*.db
+*.sqlite
+*.sqlite3
+
