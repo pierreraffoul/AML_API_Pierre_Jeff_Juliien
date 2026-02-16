@@ -374,12 +374,4 @@ print(response.json())
 - Le script `display_metrics.py` est indépendant de l'API et peut être utilisé pour analyser les modèles sans démarrer le serveur
 - Les modèles entraînés via l'API sont sauvegardés dans le dossier `models/` pour être réutilisés au redémarrage
 
-## 🤝 Contribution
-
-Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une issue ou une pull request.
-
-## 📄 Licence
-
-Ce projet est fourni tel quel, sans garantie.
-
 # AML_API_Pierre_Jeff_Juliien
