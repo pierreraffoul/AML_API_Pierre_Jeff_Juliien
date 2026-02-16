@@ -96,8 +96,8 @@ docker build -t aml-api .
 2. Lancer le conteneur :
 ```bash
 docker run --rm -p 8000:8000 \
-  -e SUPABASE_URL="https://votre-url.supabase.co" \
-  -e SUPABASE_KEY="votre-cle-supabase" \
+  -e NEXT_PUBLIC_SUPABASE_URL=https://lqckcteuponqeisgovhr.supabase.co \
+  -e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=sb_publishable_-2Fofz2Gxy2hqabBgt5w0A_b7k2eihI \
   aml-api
 ```
 
