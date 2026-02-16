@@ -86,6 +86,26 @@ python run_api.py
 
 L'API sera accessible à l'adresse : `http://localhost:8000`
 
+### Démarrer l'API avec Docker
+
+1. Construire l'image :
+```bash
+docker build -t aml-api .
+```
+
+2. Lancer le conteneur :
+```bash
+docker run --rm -p 8000:8000 \
+  -e SUPABASE_URL="https://votre-url.supabase.co" \
+  -e SUPABASE_KEY="votre-cle-supabase" \
+  aml-api
+```
+
+Ou avec Docker Compose (recommandé) :
+```bash
+docker compose up --build
+```
+
 ### Documentation interactive
 
 Une fois l'API démarrée, accédez à :
